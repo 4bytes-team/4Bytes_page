@@ -1,0 +1,266 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4 Bytes — Logo</title>
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <style>* { box-sizing: border-box; margin: 0; padding: 0; }</style>
+</head>
+<body>
+<div id="root"></div>
+<script type="text/babel">
+
+// ── Brand tokens ──────────────────────────────────────────────────────
+const INDIGO   = "#4338ca";   // primary accent
+const INDIGO_L = "#6366f1";   // lighter variant
+const INDIGO_D = "#312e81";   // darker variant
+const WHITE    = "#ffffff";
+const DARK     = "#0f0e1a";   // near-black with blue tint
+const LIGHT_BG = "#f8f8fc";   // warm off-white
+
+const FONT = "'Space Grotesk', sans-serif";
+
+// ── Logo Icon SVG ─────────────────────────────────────────────────────
+// Concept: rounded square with code brackets flanking a bold "4"
+function LogoIcon({ size = 80, bg = INDIGO, fg = WHITE, fgDim = "rgba(255,255,255,0.45)", radius = 18, outline = false }) {
+  const s = size;
+  const cx = s / 2;
+  const cy = s / 2;
+  const fontSize4 = s * 0.42;
+  const fontSizeBracket = s * 0.28;
+  const bracketOffset = s * 0.245;
+
+  return (
+    <svg width={s} height={s} viewBox={`0 0 ${s} ${s}`} fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect
+        x={outline ? 1.5 : 0} y={outline ? 1.5 : 0}
+        width={outline ? s - 3 : s} height={outline ? s - 3 : s}
+        rx={radius}
+        fill={outline ? "none" : bg}
+        stroke={outline ? fg : "none"}
+        strokeWidth={outline ? s * 0.03 : 0}
+      />
+      {/* Left bracket */}
+      <text
+        x={cx - bracketOffset}
+        y={cy + fontSize4 * 0.04}
+        fontFamily={FONT}
+        fontWeight="300"
+        fontSize={fontSizeBracket}
+        fill={fgDim}
+        textAnchor="middle"
+        dominantBaseline="central"
+      >{"<"}</text>
+      {/* The 4 */}
+      <text
+        x={cx + s * 0.02}
+        y={cy + fontSize4 * 0.04}
+        fontFamily={FONT}
+        fontWeight="700"
+        fontSize={fontSize4}
+        fill={fg}
+        textAnchor="middle"
+        dominantBaseline="central"
+      >4</text>
+      {/* Right bracket */}
+      <text
+        x={cx + bracketOffset}
+        y={cy + fontSize4 * 0.04}
+        fontFamily={FONT}
+        fontWeight="300"
+        fontSize={fontSizeBracket}
+        fill={fgDim}
+        textAnchor="middle"
+        dominantBaseline="central"
+      >{">"}</text>
+    </svg>
+  );
+}
+
+// ── Wordmark ──────────────────────────────────────────────────────────
+function Wordmark({ iconSize = 52, accentColor = INDIGO, iconBg, iconFg, textColor = DARK, subtitleColor = "#6b7280", vertical = false, gap = vertical ? 16 : 14 }) {
+  const resolvedIconBg = iconBg || accentColor;
+  const resolvedIconFg = iconFg || WHITE;
+  const spanColor = iconBg ? textColor : accentColor;
+  if (vertical) {
+    return (
+      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap }}>
+        <LogoIcon size={iconSize} bg={resolvedIconBg} fg={resolvedIconFg} fgDim={resolvedIconFg + "77"} />
+        <div style={{ textAlign: "center" }}>
+          <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: iconSize * 0.62, color: textColor, letterSpacing: "-0.03em", lineHeight: 1 }}>
+            <span style={{ color: spanColor }}>4</span>Bytes
+          </div>
+          <div style={{ fontFamily: FONT, fontWeight: 400, fontSize: iconSize * 0.24, color: subtitleColor, letterSpacing: "0.18em", textTransform: "uppercase", marginTop: 5 }}>
+            Software Development
+          </div>
+        </div>
+      </div>
+    );
+  }
+  return (
+    <div style={{ display: "flex", alignItems: "center", gap }}>
+      <LogoIcon size={iconSize} bg={resolvedIconBg} fg={resolvedIconFg} fgDim={resolvedIconFg + "77"} />
+      <div>
+        <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: iconSize * 0.62, color: textColor, letterSpacing: "-0.03em", lineHeight: 1.05 }}>
+          <span style={{ color: spanColor }}>4</span>Bytes
+        </div>
+        <div style={{ fontFamily: FONT, fontWeight: 400, fontSize: iconSize * 0.22, color: subtitleColor, letterSpacing: "0.18em", textTransform: "uppercase", marginTop: 3 }}>
+          Software Development
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ── Artboard wrapper ──────────────────────────────────────────────────
+function Board({ bg, children, padding = 48 }) {
+  return (
+    <div style={{
+      width: "100%", height: "100%",
+      background: bg,
+      display: "flex", alignItems: "center", justifyContent: "center",
+      padding,
+    }}>
+      {children}
+    </div>
+  );
+}
+
+// ── Favicon preview ───────────────────────────────────────────────────
+function FaviconPreview() {
+  const sizes = [16, 32, 48, 64];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 20, alignItems: "center" }}>
+      <div style={{ fontFamily: FONT, fontWeight: 600, fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: "#888" }}>Tamaños de ícono</div>
+      <div style={{ display: "flex", alignItems: "flex-end", gap: 24 }}>
+        {sizes.map(s => (
+          <div key={s} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <LogoIcon size={s} bg={INDIGO} radius={Math.round(s * 0.22)} />
+            <span style={{ fontFamily: FONT, fontSize: 10, color: "#888" }}>{s}px</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── Color chips ───────────────────────────────────────────────────────
+function ColorChips() {
+  const chips = [
+    { color: INDIGO,   label: "Índigo",   hex: "#4338ca" },
+    { color: INDIGO_L, label: "Índigo claro", hex: "#6366f1" },
+    { color: INDIGO_D, label: "Índigo oscuro", hex: "#312e81" },
+    { color: DARK,     label: "Oscuro",   hex: "#0f0e1a" },
+    { color: WHITE,    label: "Blanco",   hex: "#ffffff", border: true },
+  ];
+  return (
+    <div style={{ display: "flex", flexDirection: "column", gap: 16, alignItems: "center" }}>
+      <div style={{ fontFamily: FONT, fontWeight: 600, fontSize: 11, letterSpacing: "0.15em", textTransform: "uppercase", color: "#888" }}>Paleta del logo</div>
+      <div style={{ display: "flex", gap: 12 }}>
+        {chips.map(c => (
+          <div key={c.hex} style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 8 }}>
+            <div style={{ width: 44, height: 44, borderRadius: 8, background: c.color, border: c.border ? "1.5px solid #e0e0e0" : "none" }} />
+            <div style={{ fontFamily: FONT, fontSize: 10, color: "#555", textAlign: "center" }}>
+              <div style={{ fontWeight: 600 }}>{c.label}</div>
+              <div style={{ color: "#aaa" }}>{c.hex}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ── App ───────────────────────────────────────────────────────────────
+function App() {
+  return (
+    <DesignCanvas title="4 Bytes — Sistema de Logo">
+      <DCSection id="horizontal" title="Horizontal">
+        <DCArtboard id="hz-light" label="Claro" width={520} height={200}>
+          <Board bg={LIGHT_BG}>
+            <Wordmark iconSize={64} accentColor={INDIGO} textColor={DARK} subtitleColor="#7c7c9a" />
+          </Board>
+        </DCArtboard>
+        <DCArtboard id="hz-dark" label="Oscuro" width={520} height={200}>
+          <Board bg={DARK}>
+            <Wordmark iconSize={64} accentColor={INDIGO_L} textColor={WHITE} subtitleColor="rgba(255,255,255,0.4)" />
+          </Board>
+        </DCArtboard>
+        <DCArtboard id="hz-indigo" label="Índigo" width={520} height={200}>
+          <Board bg={INDIGO}>
+            <Wordmark iconSize={64} accentColor={INDIGO} iconBg={INDIGO_D} iconFg={WHITE} textColor={WHITE} subtitleColor="rgba(255,255,255,0.55)" />
+          </Board>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="vertical" title="Vertical">
+        <DCArtboard id="vt-light" label="Claro" width={300} height={280}>
+          <Board bg={LIGHT_BG}>
+            <Wordmark vertical iconSize={72} accentColor={INDIGO} textColor={DARK} subtitleColor="#7c7c9a" />
+          </Board>
+        </DCArtboard>
+        <DCArtboard id="vt-dark" label="Oscuro" width={300} height={280}>
+          <Board bg={DARK}>
+            <Wordmark vertical iconSize={72} accentColor={INDIGO_L} textColor={WHITE} subtitleColor="rgba(255,255,255,0.4)" />
+          </Board>
+        </DCArtboard>
+        <DCArtboard id="vt-indigo" label="Índigo" width={300} height={280}>
+          <Board bg={INDIGO}>
+            <Wordmark vertical iconSize={72} accentColor={INDIGO} iconBg={INDIGO_D} iconFg={WHITE} textColor={WHITE} subtitleColor="rgba(255,255,255,0.5)" />
+          </Board>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="icon" title="Ícono solo">
+        <DCArtboard id="ic-light" label="Claro" width={200} height={200}>
+          <Board bg={LIGHT_BG}>
+            <LogoIcon size={100} bg={INDIGO} radius={22} />
+          </Board>
+        </DCArtboard>
+        <DCArtboard id="ic-dark" label="Oscuro" width={200} height={200}>
+          <Board bg={DARK}>
+            <LogoIcon size={100} bg={INDIGO_L} radius={22} />
+          </Board>
+        </DCArtboard>
+        <DCArtboard id="ic-outline" label="Outline" width={200} height={200}>
+          <Board bg={LIGHT_BG}>
+            <LogoIcon size={100} bg="transparent" fg={INDIGO} fgDim={INDIGO + "66"} radius={22} outline />
+          </Board>
+        </DCArtboard>
+        <DCArtboard id="ic-sizes" label="Tamaños" width={340} height={200}>
+          <Board bg={LIGHT_BG}>
+            <FaviconPreview />
+          </Board>
+        </DCArtboard>
+      </DCSection>
+
+      <DCSection id="palette" title="Paleta">
+        <DCArtboard id="palette-chips" label="Colores del sistema" width={520} height={180}>
+          <Board bg={LIGHT_BG}>
+            <ColorChips />
+          </Board>
+        </DCArtboard>
+        <DCArtboard id="palette-type" label="Tipografía" width={480} height={180}>
+          <Board bg={LIGHT_BG} padding={32}>
+            <div style={{ display: "flex", flexDirection: "column", gap: 8, width: "100%" }}>
+              <div style={{ fontFamily: FONT, fontSize: 11, fontWeight: 600, letterSpacing: "0.15em", textTransform: "uppercase", color: "#aaa", marginBottom: 4 }}>Space Grotesk</div>
+              <div style={{ fontFamily: FONT, fontWeight: 700, fontSize: 36, color: DARK, letterSpacing: "-0.03em" }}>4Bytes</div>
+              <div style={{ fontFamily: FONT, fontWeight: 500, fontSize: 18, color: DARK }}>Software Development</div>
+              <div style={{ fontFamily: FONT, fontWeight: 300, fontSize: 14, color: "#7c7c9a" }}>Desarrollo · Sistemas · Aplicaciones</div>
+            </div>
+          </Board>
+        </DCArtboard>
+      </DCSection>
+    </DesignCanvas>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
