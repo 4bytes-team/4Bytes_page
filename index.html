@@ -1,0 +1,563 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>4 Bytes — Desarrollo de Software</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+    body { font-family: 'DM Sans', sans-serif; background: var(--bg); color: var(--fg); transition: background 0.4s, color 0.4s; }
+
+    /* Theme variables injected by React */
+    :root { --accent: oklch(45% 0.18 260); }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(24px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { animation: fadeUp 0.7s ease both; }
+    .fade-up-1 { animation-delay: 0.1s; }
+    .fade-up-2 { animation-delay: 0.2s; }
+    .fade-up-3 { animation-delay: 0.35s; }
+    .fade-up-4 { animation-delay: 0.5s; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="application/json" id="speaker-notes">[]</script>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+  "theme": "oscuro"
+}/*EDITMODE-END*/;
+
+const THEMES = {
+  claro: {
+    bg: "oklch(98.5% 0.005 80)",
+    bg2: "oklch(95% 0.008 80)",
+    fg: "oklch(12% 0.015 260)",
+    fg2: "oklch(42% 0.012 260)",
+    border: "oklch(88% 0.008 80)",
+    card: "#ffffff",
+    navBg: "oklch(98.5% 0.005 80)dd",
+    shadow: "0 1px 3px rgba(0,0,0,0.06)",
+    glow: "none",
+  },
+  oscuro: {
+    bg: "oklch(10% 0.02 265)",
+    bg2: "oklch(14% 0.025 265)",
+    fg: "oklch(94% 0.008 260)",
+    fg2: "oklch(60% 0.015 260)",
+    border: "oklch(20% 0.025 265)",
+    card: "oklch(14% 0.025 265)",
+    navBg: "oklch(10% 0.02 265)ee",
+    shadow: "0 1px 3px rgba(0,0,0,0.4)",
+    glow: "0 0 40px oklch(45% 0.2 260 / 0.08)",
+  },
+  verde: {
+    bg: "oklch(97% 0.012 90)",
+    bg2: "oklch(93% 0.015 90)",
+    fg: "oklch(14% 0.02 150)",
+    fg2: "oklch(38% 0.015 150)",
+    border: "oklch(86% 0.012 90)",
+    card: "oklch(99% 0.006 90)",
+    navBg: "oklch(97% 0.012 90)dd",
+    shadow: "0 1px 3px rgba(0,0,0,0.05)",
+    glow: "none",
+  }
+};
+
+const ACCENT_BY_THEME = { claro: 260, oscuro: 265, verde: 145 };
+
+// ─── Data placeholders ───────────────────────────────────────────────
+const TEAM = [
+  { name: "Franco Narvaez", role: "CEO, Desarrollador", initial: "F" },
+  { name: "Pablo Herrera", role: "Finanzas, Desarrollador", initial: "P" },
+  { name: "Abel Carrizo", role: "Desarrollador", initial: "A" },
+  { name: "Victor Gimenez", role: "Desarrollador", initial: "V" },
+];
+
+const PROJECTS = [
+  { title: "Proyecto A", desc: "Aplicación web de gestión administrativa para empresa del sector industrial.", tags: ["React", "Node.js", "PostgreSQL"] },
+  { title: "Proyecto B", desc: "Plataforma e-commerce con panel de control y sistema de inventario en tiempo real.", tags: ["Next.js", "MongoDB", "AWS"] },
+  { title: "Proyecto C", desc: "Sistema de reportes y analítica para empresa de logística.", tags: ["Python", "Django", "Power BI"] },
+];
+
+// ─── Theme toggle button ─────────────────────────────────────────────
+function ThemeToggle({ theme, onToggle, t, accent }) {
+  const isDark = theme === "oscuro";
+  const [hovered, setHovered] = useState(false);
+  return (
+    <button
+      onClick={onToggle}
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      title={isDark ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
+      style={{
+        width: 40, height: 40,
+        borderRadius: 8,
+        border: `1px solid ${hovered ? accent : t.border}`,
+        background: hovered ? accent + "15" : "transparent",
+        cursor: "pointer",
+        display: "flex", alignItems: "center", justifyContent: "center",
+        transition: "border-color 0.2s, background 0.2s, transform 0.2s",
+        transform: hovered ? "scale(1.08)" : "scale(1)",
+        flexShrink: 0,
+      }}>
+      <svg width={18} height={18} viewBox="0 0 24 24" fill="none" stroke={hovered ? accent : t.fg2} strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+        {isDark ? (
+          /* Sun icon */
+          <>
+            <circle cx="12" cy="12" r="5"/>
+            <line x1="12" y1="1" x2="12" y2="3"/>
+            <line x1="12" y1="21" x2="12" y2="23"/>
+            <line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/>
+            <line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/>
+            <line x1="1" y1="12" x2="3" y2="12"/>
+            <line x1="21" y1="12" x2="23" y2="12"/>
+            <line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/>
+            <line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/>
+          </>
+        ) : (
+          /* Moon icon */
+          <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+        )}
+      </svg>
+    </button>
+  );
+}
+
+// ─── Nav ─────────────────────────────────────────────────────────────
+function Nav({ t, accent, theme, onThemeToggle }) {
+  const [scrolled, setScrolled] = useState(false);
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener("scroll", onScroll);
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  const linkStyle = {
+    fontFamily: "'DM Sans', sans-serif",
+    fontSize: 14,
+    fontWeight: 500,
+    color: t.fg2,
+    textDecoration: "none",
+    letterSpacing: "0.04em",
+    transition: "color 0.2s",
+    cursor: "pointer"
+  };
+
+  return (
+    <nav style={{
+      position: "fixed", top: 0, left: 0, right: 0, zIndex: 100,
+      background: t.navBg,
+      backdropFilter: "blur(12px)",
+      WebkitBackdropFilter: "blur(12px)",
+      borderBottom: scrolled ? `1px solid ${t.border}` : "1px solid transparent",
+      transition: "border-color 0.3s, background 0.4s",
+      padding: "0 5vw",
+      display: "flex", alignItems: "center", justifyContent: "space-between",
+      height: 64,
+    }}>
+      {/* Logo */}
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <svg width={32} height={32} viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width={32} height={32} rx={7} fill={accent}/>
+          <text x="7" y="22.5" fontFamily="'Space Grotesk', sans-serif" fontWeight="300" fontSize="10" fill="rgba(255,255,255,0.5)">{"<"}</text>
+          <text x="16" y="23" fontFamily="'Space Grotesk', sans-serif" fontWeight="700" fontSize="14" fill="white" textAnchor="middle">4</text>
+          <text x="25" y="22.5" fontFamily="'Space Grotesk', sans-serif" fontWeight="300" fontSize="10" fill="rgba(255,255,255,0.5)" textAnchor="middle">{">"}</text>
+        </svg>
+        <div style={{ display: "flex", alignItems: "baseline", gap: 1 }}>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 20, color: accent }}>4</span>
+          <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 19, color: t.fg, letterSpacing: "-0.02em" }}>Bytes</span>
+        </div>
+      </div>
+
+      {/* Links + toggle */}
+      <div style={{ display: "flex", alignItems: "center", gap: 32 }}>
+        {[["Nosotros", "#nosotros"], ["Proyectos", "#proyectos"], ["Contacto", "#contacto"]].map(([label, href]) => (
+          <a key={href} href={href} style={linkStyle}
+            onMouseEnter={e => e.target.style.color = accent}
+            onMouseLeave={e => e.target.style.color = t.fg2}>{label}</a>
+        ))}
+        <ThemeToggle theme={theme} onToggle={onThemeToggle} t={t} accent={accent} />
+      </div>
+    </nav>
+  );
+}
+
+// ─── Hero ─────────────────────────────────────────────────────────────
+function Hero({ t, accent }) {
+  return (
+    <section style={{
+      minHeight: "100vh", display: "flex", flexDirection: "column",
+      justifyContent: "center", padding: "120px 5vw 80px",
+      position: "relative", overflow: "hidden",
+    }}>
+      {/* Background number decoration */}
+      <div style={{
+        position: "absolute", right: "4vw", top: "50%", transform: "translateY(-50%)",
+        fontFamily: "'Space Grotesk', sans-serif",
+        fontSize: "clamp(200px, 28vw, 420px)",
+        fontWeight: 700,
+        color: t.bg2,
+        lineHeight: 1,
+        userSelect: "none",
+        pointerEvents: "none",
+        letterSpacing: "-0.05em",
+        transition: "color 0.4s",
+        filter: t.glow !== "none" ? "blur(0px)" : "none",
+        textShadow: t.glow !== "none" ? `0 0 120px ${accent}30` : "none",
+      }}>4</div>
+
+      <div style={{ maxWidth: 700, position: "relative" }}>
+        <p className="fade-up fade-up-1" style={{
+          fontFamily: "'Space Grotesk', sans-serif",
+          fontSize: 13, fontWeight: 500, letterSpacing: "0.18em",
+          color: accent, textTransform: "uppercase", marginBottom: 24,
+        }}>
+          Equipo de Desarrollo de Software
+        </p>
+        <h1 className="fade-up fade-up-2" style={{
+          fontFamily: "'Space Grotesk', sans-serif",
+          fontSize: "clamp(48px, 7vw, 96px)",
+          fontWeight: 700,
+          lineHeight: 1.05,
+          letterSpacing: "-0.03em",
+          color: t.fg,
+          marginBottom: 28,
+          textWrap: "balance",
+        }}>
+          Construimos software<br />que funciona.
+        </h1>
+        <p className="fade-up fade-up-3" style={{
+          fontSize: "clamp(16px, 2vw, 20px)",
+          color: t.fg2,
+          lineHeight: 1.65,
+          maxWidth: 520,
+          marginBottom: 48,
+          fontWeight: 300,
+        }}>
+          Desarrollamos páginas web, aplicaciones de gestión y sistemas a medida. Soluciones claras para problemas reales.
+        </p>
+        <div className="fade-up fade-up-4" style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+          <a href="#proyectos" style={{
+            display: "inline-block",
+            background: accent, color: "#fff",
+            padding: "14px 32px", borderRadius: 4,
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontWeight: 600, fontSize: 15, letterSpacing: "0.02em",
+            textDecoration: "none",
+            transition: "opacity 0.2s, transform 0.2s",
+          }}
+          onMouseEnter={e => { e.target.style.opacity = 0.85; e.target.style.transform = "translateY(-2px)"; }}
+          onMouseLeave={e => { e.target.style.opacity = 1; e.target.style.transform = "translateY(0)"; }}>
+            Ver proyectos
+          </a>
+          <a href="#contacto" style={{
+            display: "inline-block",
+            background: "transparent", color: t.fg,
+            border: `1.5px solid ${t.border}`,
+            padding: "14px 32px", borderRadius: 4,
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontWeight: 500, fontSize: 15,
+            textDecoration: "none",
+            transition: "border-color 0.2s, transform 0.2s",
+          }}
+          onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.transform = "translateY(-2px)"; }}
+          onMouseLeave={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.transform = "translateY(0)"; }}>
+            Contactanos
+          </a>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── About ────────────────────────────────────────────────────────────
+function About({ t, accent }) {
+  return (
+    <section id="nosotros" style={{ padding: "100px 5vw", background: t.bg2, transition: "background 0.4s" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "60px 80px", alignItems: "start" }}>
+          <div>
+            <p style={{
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontSize: 12, fontWeight: 600, letterSpacing: "0.2em",
+              color: accent, textTransform: "uppercase", marginBottom: 20,
+            }}>Quiénes somos</p>
+            <h2 style={{
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 700,
+              letterSpacing: "-0.03em", lineHeight: 1.1,
+              color: t.fg, marginBottom: 24,
+            }}>Un equipo de cuatro.</h2>
+            <p style={{ fontSize: 17, color: t.fg2, lineHeight: 1.7, fontWeight: 300, marginBottom: 16 }}>
+              Somos 4 Bytes, un equipo de desarrolladores de software apasionado por crear soluciones digitales de calidad. Trabajamos en páginas web, aplicaciones de administración y sistemas a medida.
+            </p>
+            <p style={{ fontSize: 17, color: t.fg2, lineHeight: 1.7, fontWeight: 300 }}>
+              Nos enfocamos en entregar productos que realmente funcionen: limpios, rápidos y fáciles de usar.
+            </p>
+          </div>
+
+          {/* Team grid */}
+          <div>
+            <p style={{
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontSize: 12, fontWeight: 600, letterSpacing: "0.2em",
+              color: accent, textTransform: "uppercase", marginBottom: 20,
+            }}>El equipo</p>
+            <div style={{ display: "flex", flexDirection: "column", gap: 4 }}>
+              {TEAM.map((m, i) => (
+                <div key={i} style={{
+                  display: "flex", alignItems: "center", gap: 16,
+                  padding: "14px 16px",
+                  borderRadius: 6,
+                  border: `1px solid ${t.border}`,
+                  background: t.card,
+                  transition: "border-color 0.2s, transform 0.2s",
+                  cursor: "default",
+                }}
+                onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.transform = "translateX(4px)"; }}
+                onMouseLeave={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.transform = "translateX(0)"; }}>
+                  <div style={{
+                    width: 40, height: 40, borderRadius: "50%",
+                    background: accent + "22",
+                    display: "flex", alignItems: "center", justifyContent: "center",
+                    fontFamily: "'Space Grotesk', sans-serif",
+                    fontWeight: 700, fontSize: 16, color: accent, flexShrink: 0,
+                  }}>{m.initial}</div>
+                  <div>
+                    <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 15, color: t.fg }}>{m.name}</div>
+                    <div style={{ fontSize: 13, color: t.fg2, marginTop: 1 }}>{m.role}</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Projects ─────────────────────────────────────────────────────────
+function Projects({ t, accent }) {
+  return (
+    <section id="proyectos" style={{ padding: "100px 5vw", background: t.bg, transition: "background 0.4s" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-end", marginBottom: 56 }}>
+          <div>
+            <p style={{
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontSize: 12, fontWeight: 600, letterSpacing: "0.2em",
+              color: accent, textTransform: "uppercase", marginBottom: 12,
+            }}>Lo que hemos hecho</p>
+            <h2 style={{
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 700,
+              letterSpacing: "-0.03em", color: t.fg, lineHeight: 1.1,
+            }}>Proyectos</h2>
+          </div>
+          <span style={{ fontSize: 13, color: t.fg2, fontStyle: "italic" }}>Próximamente más proyectos</span>
+        </div>
+
+        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fill, minmax(300px, 1fr))", gap: 24 }}>
+          {PROJECTS.map((p, i) => (
+            <ProjectCard key={i} p={p} t={t} accent={accent} index={i} />
+          ))}
+
+        </div>
+      </div>
+    </section>
+  );
+}
+
+function ProjectCard({ p, t, accent, index }) {
+  const [hovered, setHovered] = useState(false);
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        background: t.card,
+        border: `1px solid ${hovered ? accent : t.border}`,
+        borderRadius: 8,
+        padding: "32px 28px",
+        transition: "border-color 0.25s, transform 0.25s, box-shadow 0.25s",
+        transform: hovered ? "translateY(-4px)" : "translateY(0)",
+        boxShadow: hovered ? `0 12px 40px ${accent}22` : t.shadow,
+        cursor: "default",
+        display: "flex", flexDirection: "column", gap: 16,
+      }}>
+      <div style={{
+        fontFamily: "'Space Grotesk', sans-serif",
+        fontSize: 12, fontWeight: 600, letterSpacing: "0.15em",
+        color: accent, textTransform: "uppercase",
+      }}>
+        {String(index + 1).padStart(2, "0")}
+      </div>
+      <h3 style={{
+        fontFamily: "'Space Grotesk', sans-serif",
+        fontSize: 22, fontWeight: 700,
+        letterSpacing: "-0.02em", color: t.fg,
+      }}>{p.title}</h3>
+      <p style={{ fontSize: 15, color: t.fg2, lineHeight: 1.65, fontWeight: 300, flexGrow: 1 }}>{p.desc}</p>
+      <div style={{ display: "flex", flexWrap: "wrap", gap: 8 }}>
+        {p.tags.map(tag => (
+          <span key={tag} style={{
+            fontFamily: "'Space Grotesk', sans-serif",
+            fontSize: 12, fontWeight: 500,
+            color: accent,
+            background: accent + "14",
+            padding: "4px 10px", borderRadius: 3,
+          }}>{tag}</span>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ─── Contact ──────────────────────────────────────────────────────────
+function Contact({ t, accent }) {
+  const items = [
+    { icon: "✉", label: "Email", value: "4bytes.team@gmail.com", href: "mailto:4bytes.team@gmail.com" },
+    { icon: "in", label: "LinkedIn", value: "/4bytes", href: "#" },
+  ];
+
+  return (
+    <section id="contacto" style={{ padding: "100px 5vw", background: t.bg2, transition: "background 0.4s" }}>
+      <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "60px 80px", alignItems: "start" }}>
+          <div>
+            <p style={{
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontSize: 12, fontWeight: 600, letterSpacing: "0.2em",
+              color: accent, textTransform: "uppercase", marginBottom: 20,
+            }}>Hablemos</p>
+            <h2 style={{
+              fontFamily: "'Space Grotesk', sans-serif",
+              fontSize: "clamp(32px, 4vw, 52px)", fontWeight: 700,
+              letterSpacing: "-0.03em", lineHeight: 1.1,
+              color: t.fg, marginBottom: 20,
+            }}>¿Tenés un<br />proyecto en mente?</h2>
+            <p style={{ fontSize: 17, color: t.fg2, lineHeight: 1.7, fontWeight: 300 }}>
+              Contactanos y te respondemos a la brevedad. Estamos disponibles para nuevos proyectos.
+            </p>
+          </div>
+
+          <div style={{ display: "flex", flexDirection: "column", gap: 12, paddingTop: 4 }}>
+            {items.map((item) => (
+              <a key={item.label} href={item.href} style={{
+                display: "flex", alignItems: "center", gap: 20,
+                padding: "20px 24px",
+                border: `1px solid ${t.border}`,
+                borderRadius: 6,
+                background: t.card,
+                textDecoration: "none",
+                transition: "border-color 0.2s, transform 0.2s",
+                cursor: "pointer",
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor = accent; e.currentTarget.style.transform = "translateX(4px)"; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor = t.border; e.currentTarget.style.transform = "translateX(0)"; }}>
+                <div style={{
+                  width: 44, height: 44, borderRadius: 6,
+                  background: accent + "18",
+                  display: "flex", alignItems: "center", justifyContent: "center",
+                  fontFamily: "'Space Grotesk', sans-serif",
+                  fontWeight: 700, fontSize: 14, color: accent,
+                  flexShrink: 0,
+                }}>{item.icon}</div>
+                <div>
+                  <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 11, fontWeight: 600, color: t.fg2, letterSpacing: "0.12em", textTransform: "uppercase", marginBottom: 3 }}>{item.label}</div>
+                  <div style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 16, color: t.fg }}>{item.value}</div>
+                </div>
+              </a>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+// ─── Footer ───────────────────────────────────────────────────────────
+function Footer({ t, accent }) {
+  return (
+    <footer style={{
+      padding: "32px 5vw",
+      borderTop: `1px solid ${t.border}`,
+      display: "flex", justifyContent: "space-between", alignItems: "center",
+      background: t.bg, transition: "background 0.4s",
+    }}>
+      <div style={{ display: "flex", alignItems: "baseline", gap: 4 }}>
+        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 700, fontSize: 18, color: accent }}>4</span>
+        <span style={{ fontFamily: "'Space Grotesk', sans-serif", fontWeight: 600, fontSize: 16, color: t.fg, letterSpacing: "-0.02em" }}>Bytes</span>
+      </div>
+      <span style={{ fontFamily: "'DM Sans', sans-serif", fontSize: 13, color: t.fg2 }}>
+        © 2026 · Todos los derechos reservados
+      </span>
+    </footer>
+  );
+}
+
+// ─── App ──────────────────────────────────────────────────────────────
+function App() {
+  const [tweaks, setTweak] = useTweaks(TWEAK_DEFAULTS);
+  const theme = THEMES[tweaks.theme] || THEMES.claro;
+  const accentColor = `oklch(48% 0.22 ${ACCENT_BY_THEME[tweaks.theme] || 265})`;
+
+  // Toggle between claro and oscuro
+  const handleThemeToggle = () => {
+    const next = tweaks.theme === "oscuro" ? "claro" : "oscuro";
+    setTweak("theme", next);
+  };
+
+  useEffect(() => {
+    document.body.style.background = theme.bg;
+    document.body.style.color = theme.fg;
+    document.body.style.transition = "background 0.4s, color 0.4s";
+  }, [theme]);
+
+  return (
+    <div style={{ background: theme.bg, minHeight: "100vh", transition: "background 0.4s, color 0.4s" }}>
+      <Nav t={theme} accent={accentColor} theme={tweaks.theme} onThemeToggle={handleThemeToggle} />
+      <Hero t={theme} accent={accentColor} />
+      <About t={theme} accent={accentColor} />
+      <Projects t={theme} accent={accentColor} />
+      <Contact t={theme} accent={accentColor} />
+      <Footer t={theme} accent={accentColor} />
+
+      <TweaksPanel>
+        <TweakSection title="Tema visual">
+          <TweakRadio
+            label="Estilo"
+            value={tweaks.theme}
+            options={[
+              { value: "claro", label: "Claro" },
+              { value: "oscuro", label: "Oscuro" },
+              { value: "verde", label: "Verde" },
+            ]}
+            onChange={v => setTweak("theme", v)}
+          />
+        </TweakSection>
+      </TweaksPanel>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
